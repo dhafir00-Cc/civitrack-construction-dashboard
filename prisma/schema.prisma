@@ -1,0 +1,223 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  PROJECT_MANAGER
+  SITE_ENGINEER
+  OWNER
+}
+
+enum ProjectStatus {
+  PLANNED
+  IN_PROGRESS
+  AT_RISK
+  COMPLETED
+  ON_HOLD
+}
+
+enum WorkStatus {
+  PLANNED
+  IN_PROGRESS
+  DELAYED
+  COMPLETED
+}
+
+enum MaterialStatus {
+  SAFE
+  LOW_STOCK
+  OUT_OF_STOCK
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  HALF_DAY
+}
+
+enum RiskLevel {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum RiskStatus {
+  OPEN
+  IN_REVIEW
+  RESOLVED
+}
+
+enum ReportType {
+  DAILY
+  WEEKLY_PROGRESS
+  MATERIAL_USAGE
+  COST
+  FINAL_SUMMARY
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      Role
+  position  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Project {
+  id              String        @id @default(cuid())
+  name            String
+  location        String
+  client          String
+  startDate       DateTime
+  endDate         DateTime
+  totalBudget     Float
+  description     String
+  status          ProjectStatus @default(PLANNED)
+  overallProgress Int           @default(0)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  workItems    WorkItem[]
+  dailyReports DailyReport[]
+  materials    Material[]
+  costs        Cost[]
+  workers      Worker[]
+  schedules    Schedule[]
+  risks        Risk[]
+  reports      Report[]
+}
+
+model WorkItem {
+  id             String     @id @default(cuid())
+  projectId      String
+  category       String
+  name           String
+  weight         Float
+  targetProgress Int
+  actualProgress Int
+  startDate      DateTime
+  deadline       DateTime
+  status         WorkStatus
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model DailyReport {
+  id                 String   @id @default(cuid())
+  projectId          String
+  reportDate         DateTime
+  weather            String
+  workerCount        Int
+  workCompletedToday String
+  materialUsed       String
+  equipmentUsed      String
+  siteProblems       String
+  notes              String
+  photoPlaceholder   String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model Material {
+  id             String         @id @default(cuid())
+  projectId      String
+  name           String
+  unit           String
+  initialStock   Float
+  incomingStock  Float
+  usedStock      Float
+  remainingStock Float
+  status         MaterialStatus
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model Cost {
+  id          String   @id @default(cuid())
+  projectId   String
+  category    String
+  description String
+  date        DateTime
+  amount      Float
+  notes       String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model Worker {
+  id               String           @id @default(cuid())
+  projectId         String
+  name             String
+  position         String
+  dailyWage        Float
+  workingDays      Int
+  totalWage        Float
+  attendanceStatus AttendanceStatus
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model Schedule {
+  id        String     @id @default(cuid())
+  projectId String
+  workItem  String
+  startDate DateTime
+  endDate   DateTime
+  progress  Int
+  status    WorkStatus
+  isDelayed Boolean    @default(false)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model Risk {
+  id                String     @id @default(cuid())
+  projectId         String
+  title             String
+  level             RiskLevel
+  impact            String
+  cause             String
+  recommendedAction String
+  status            RiskStatus
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model Report {
+  id          String     @id @default(cuid())
+  projectId   String
+  type        ReportType
+  title       String
+  periodStart DateTime
+  periodEnd   DateTime
+  summary     String
+  content     String
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
